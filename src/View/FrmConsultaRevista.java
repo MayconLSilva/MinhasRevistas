@@ -16,6 +16,9 @@ import java.util.ArrayList;
 import javax.swing.JOptionPane;
 import javax.swing.ListSelectionModel;
 import Util.ConectaBanco;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  *
@@ -25,10 +28,12 @@ public class FrmConsultaRevista extends javax.swing.JDialog {
     
     ConectaBanco conn = new ConectaBanco();
     private String idCodigo, anoRevista,caixaRevista,numeroEdicao,colecao;
+    private String statusLivro;
     
     PreparedStatement pst;
     ResultSet rs;
-    Connection conecta;
+    Connection conecta; 
+     
 
     /**
      * Creates new form FrmConsultaColecao
@@ -115,7 +120,7 @@ public class FrmConsultaRevista extends javax.swing.JDialog {
             }
         });
 
-        jComboBoxTipoPesquisa.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "TODOS", "NOME", "CÓDIGO" }));
+        jComboBoxTipoPesquisa.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "TODOS", "ANO", "CÓDIGO" }));
 
         jButtonOK.setText("OK");
         jButtonOK.addActionListener(new java.awt.event.ActionListener() {
@@ -211,6 +216,11 @@ public class FrmConsultaRevista extends javax.swing.JDialog {
         caixaRevista = (jTableColecao.getValueAt(linha_selecionada, 2).toString());
         numeroEdicao = (jTableColecao.getValueAt(linha_selecionada, 3).toString());
         colecao = (jTableColecao.getValueAt(linha_selecionada, 4).toString());
+        setStatusLivro(jTableColecao.getValueAt(linha_selecionada, 5).toString());
+        
+        if(getStatusLivro().equals("EMPRESTADO")){
+            JOptionPane.showMessageDialog(rootPane, "O livro está emprestado!!");
+        }
                 
         //String UnidadeID = "" + jTableColecao.getValueAt(jTableColecao.getSelectedRow(), 0);
         jTextFieldCodigoClicado.setText(idCodigo);
@@ -226,32 +236,49 @@ public class FrmConsultaRevista extends javax.swing.JDialog {
        jTextFieldColecaoClicada.setText("");
        
        if(jComboBoxTipoPesquisa.getSelectedItem().equals("TODOS")){           
-           preencherTabelaColecao("select *from tblRevistas");
-       }else if(jComboBoxTipoPesquisa.getSelectedItem().equals("NOME")){
+           preencherTabelaColecao("select *from tblRevistas inner join tblEmprestimo on tblRevistas.colecao_tblRevistas = tblEmprestimo.livro_tblEmprestimo");
+       }else if(jComboBoxTipoPesquisa.getSelectedItem().equals("ANO")){
            String filtro = jTextFieldFiltroPesquisa.getText().toString();
-           preencherTabelaColecao("select *from tblRevistas where ano_tblRevistas = '"+filtro+"'"); 
+           preencherTabelaColecao("select *from tblRevistas inner join tblEmprestimo on tblRevistas.colecao_tblRevistas = tblEmprestimo.livro_tblEmprestimo where ano_tblRevistas = '"+filtro+"'"); 
        }else if(jComboBoxTipoPesquisa.getSelectedItem().equals("CÓDIGO")){
            String filtro = jTextFieldFiltroPesquisa.getText().toString();
-           preencherTabelaColecao("select *from tblRevistas where id_tblRevistas = '"+filtro+"'"); 
+           preencherTabelaColecao("select *from tblRevistas inner join tblEmprestimo on tblRevistas.colecao_tblRevistas = tblEmprestimo.livro_tblEmprestimo where id_tblRevistas = '"+filtro+"'"); 
        }
     }//GEN-LAST:event_jButtonPesquisarActionPerformed
 
    public void preencherTabelaColecao(String sql){
         ArrayList dados = new ArrayList();
         
-        String[] Colunas = new String[]{"ID","ANO","CAIXA","NUMERO EDIÇÃO","COLEÇÃO"};
+        String[] Colunas = new String[]{"ID","ANO","CAIXA","NUMERO EDIÇÃO","COLEÇÃO","STATUS"};
         conn.conexao();
         conn.executaSQL(sql);
         try{
             conn.rs.next();
             do{
-                dados.add(new Object[]{ conn.rs.getString("id_tblRevistas") ,conn.rs.getString("ano_tblRevistas"),conn.rs.getString("caixa_tblRevistas_fk"),conn.rs.getString("numeroEdicao_tblRevistas"),conn.rs.getString("colecao_tblRevistas")});
+                //Inicio do código fonte verifica se o livro tá emprestado o livre
+                String statusLivro = null;
+                try{
+                    String dataDevolucaoBanco= conn.rs.getString("dataDevolucao_tblEmprestimo");                
+                    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+                    Date hoje = new Date();
+                    String dataAtual = sdf.format(hoje);
+                    Date date1 = sdf.parse(dataDevolucaoBanco);
+                    Date date2 = sdf.parse(dataAtual);
+                    if(date1.compareTo(date2)<0){
+                        statusLivro ="LIVRE";
+                    }else{
+                        statusLivro ="EMPRESTADO";
+                    }
+                    //Fim do código fonte verifica se o livro tá emprestado o livre
+                }catch(ParseException ex){
+                    ex.printStackTrace();
+                }
+                
+                dados.add(new Object[]{ conn.rs.getString("id_tblRevistas") ,conn.rs.getString("ano_tblRevistas"),conn.rs.getString("caixa_tblRevistas_fk"),conn.rs.getString("numeroEdicao_tblRevistas"),conn.rs.getString("colecao_tblRevistas"),statusLivro});
                 
             }while (conn.rs.next());
         }catch (SQLException ex){
-            //JOptionPane.showMessageDialog(null, "Erro ao preencher o ArrayList!\nERRO:" + ex);
-         //catch(NumberFormatException erro){
-                JOptionPane.showMessageDialog(null, "Coleção não encontrada");
+            JOptionPane.showMessageDialog(null, "Coleção não encontrada");
         }
         
         ModeloTabela modelo = new ModeloTabela(dados, Colunas);
@@ -266,13 +293,12 @@ public class FrmConsultaRevista extends javax.swing.JDialog {
         jTableColecao.getColumnModel().getColumn(3).setResizable(false);
         jTableColecao.getColumnModel().getColumn(4).setPreferredWidth(220);
         jTableColecao.getColumnModel().getColumn(4).setResizable(false);
+        jTableColecao.getColumnModel().getColumn(5).setPreferredWidth(90);
+        jTableColecao.getColumnModel().getColumn(5).setResizable(false);
         jTableColecao.getTableHeader().setReorderingAllowed(false);
         jTableColecao.setAutoResizeMode(jTableColecao.AUTO_RESIZE_OFF);
         jTableColecao.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
     }
-    
-    
-    
     
     
        
@@ -404,5 +430,19 @@ public class FrmConsultaRevista extends javax.swing.JDialog {
      */
     public void setColecao(String colecao) {
         this.colecao = colecao;
+    }
+
+    /**
+     * @return the statusLivro
+     */
+    public String getStatusLivro() {
+        return statusLivro;
+    }
+
+    /**
+     * @param statusLivro the statusLivro to set
+     */
+    public void setStatusLivro(String statusLivro) {
+        this.statusLivro = statusLivro;
     }
 }

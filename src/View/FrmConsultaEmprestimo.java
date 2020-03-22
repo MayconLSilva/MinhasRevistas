@@ -16,6 +16,9 @@ import java.util.ArrayList;
 import javax.swing.JOptionPane;
 import javax.swing.ListSelectionModel;
 import Util.ConectaBanco;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  *
@@ -233,13 +236,32 @@ public class FrmConsultaEmprestimo extends javax.swing.JDialog {
    public void preencherTabelaColecao(String sql){
         ArrayList dados = new ArrayList();
         
-        String[] Colunas = new String[]{"ID","DATA RETIRADA","DATA DEV.","NOME","LIVRO"};
+        String[] Colunas = new String[]{"ID","DATA RETIRADA","DATA DEV.","NOME","LIVRO","STATUS"};
         conn.conexao();
         conn.executaSQL(sql);
         try{
             conn.rs.next();
             do{
-                dados.add(new Object[]{ conn.rs.getString("id_tblEmprestimo") ,conn.rs.getString("dataEmprestimo_tblEmprestimo"),conn.rs.getString("dataDevolucao_tblEmprestimo"),conn.rs.getString("nomeAmigo_tblEmprestimo"),conn.rs.getString("livro_tblEmprestimo")});
+                //Inicio do código fonte verifica se o livro tá emprestado o livre
+                String statusLivro = null;
+                try{
+                    String dataDevolucaoBanco= conn.rs.getString("dataDevolucao_tblEmprestimo");                
+                    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+                    Date hoje = new Date();
+                    String dataAtual = sdf.format(hoje);
+                    Date date1 = sdf.parse(dataDevolucaoBanco);
+                    Date date2 = sdf.parse(dataAtual);
+                    if(date1.compareTo(date2)<0){
+                        System.out.println("ver");
+                        statusLivro ="LIVRE";
+                    }else{
+                        statusLivro ="EMPRESTADO";
+                    }
+                    //Fim do código fonte verifica se o livro tá emprestado o livre
+                }catch(ParseException ex){
+                    ex.printStackTrace();
+                }
+                dados.add(new Object[]{ conn.rs.getString("id_tblEmprestimo") ,conn.rs.getString("dataEmprestimo_tblEmprestimo"),conn.rs.getString("dataDevolucao_tblEmprestimo"),conn.rs.getString("nomeAmigo_tblEmprestimo"),conn.rs.getString("livro_tblEmprestimo"),statusLivro});
                 
             }while (conn.rs.next());
         }catch (SQLException ex){
@@ -260,6 +282,8 @@ public class FrmConsultaEmprestimo extends javax.swing.JDialog {
         jTableColecao.getColumnModel().getColumn(3).setResizable(false);
         jTableColecao.getColumnModel().getColumn(4).setPreferredWidth(220);
         jTableColecao.getColumnModel().getColumn(4).setResizable(false);
+        jTableColecao.getColumnModel().getColumn(5).setPreferredWidth(90);
+        jTableColecao.getColumnModel().getColumn(5).setResizable(false);
         jTableColecao.getTableHeader().setReorderingAllowed(false);
         jTableColecao.setAutoResizeMode(jTableColecao.AUTO_RESIZE_OFF);
         jTableColecao.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);

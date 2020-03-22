@@ -25,6 +25,7 @@ public class FrmEmprestimo extends javax.swing.JInternalFrame {
     ConectaBanco conecta = new ConectaBanco();
         
     private int flag;
+    private String returnStatusLivro;
 
     /**
      * Creates new form FrmColecao
@@ -253,24 +254,30 @@ public class FrmEmprestimo extends javax.swing.JInternalFrame {
                 mod.setLivroEmprestado(jTextFieldLivro.getText());
                 mod.setDataEmprestimo(jFormattedTextFieldDataRetirada.getText());
                 mod.setDataDevolucao(jFormattedTextFieldDataDevolucao.getText());
-                control.SalvarEmprestimo(mod);
+                if (jTextFieldNomeAmigo.getText().toString().equals("")) {
+                    JOptionPane.showMessageDialog(rootPane, "Por favor preencha o amigo!!");
+                } else {
+                    if (returnStatusLivro.equals("EMPRESTADO")) {
+                        int input = JOptionPane.showConfirmDialog(null, "Livro já eprestado, continuar?", "Selecione uma opção...",
+                                JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.ERROR_MESSAGE);
+                        // 0=yes, 1=no, 2=cancel
+                        System.out.println(input);
+                        if (input == 0) {
+                            control.SalvarEmprestimo(mod);
+                            finalizarSalvar();
+                        } else if (input == 1) {
+                            JOptionPane.showMessageDialog(rootPane, "Operação não salva!!");
+                            cancelamentoSalvar();
+                        } else if (input == 2) {
+                            JOptionPane.showMessageDialog(rootPane, "Operação Cancelada e não salva!!");
+                            cancelamentoSalvar();
+                        }
+                    } else {
+                        control.SalvarEmprestimo(mod);
+                        finalizarSalvar();
+                    }
+                } 
                 
-                //Método ativa os menus
-                jMenuNovo.setEnabled(true);
-                jMenuSalvar.setEnabled(false);
-                jMenuEditar.setEnabled(true);
-                jMenuExluir.setEnabled(true);
-                jMenuCancelar.setEnabled(false);
-                jButtonBuscar.setEnabled(false);
-                jButtonPesquisarAmigo.setEnabled(false);
-                jButtonPesquisarLivro.setEnabled(false);
-                
-                jTextFieldCodigo.setEnabled(false);
-                jTextFieldNomeAmigo.setEnabled(false);
-                jFormattedTextFieldDataRetirada.setEnabled(false);
-                jFormattedTextFieldDataDevolucao.setEnabled(false); 
-                
-                buscarUltimaInsercao();
             }
             //ELSE EDITAR
             else{
@@ -485,6 +492,7 @@ public class FrmEmprestimo extends javax.swing.JInternalFrame {
         FrmConsultaRevista frmContulta = new FrmConsultaRevista(null, true);
         frmContulta.setVisible(true);
         String colecao = frmContulta.getColecao();
+        returnStatusLivro = frmContulta.getStatusLivro();
         
         jTextFieldLivro.setText(colecao);
     }//GEN-LAST:event_jButtonPesquisarLivroActionPerformed
@@ -518,7 +526,47 @@ public class FrmEmprestimo extends javax.swing.JInternalFrame {
         }
     }
        
+       public void cancelamentoSalvar(){
+           jMenuNovo.setEnabled(true);
+            jMenuSalvar.setEnabled(false);
+            jMenuEditar.setEnabled(false);
+            jMenuExluir.setEnabled(false);
+            jMenuCancelar.setEnabled(false);
+            jButtonBuscar.setEnabled(true);
+            jButtonPesquisarAmigo.setEnabled(false);
+            jButtonPesquisarLivro.setEnabled(false);
+
+            jTextFieldCodigo.setEnabled(true);
+            jTextFieldNomeAmigo.setEnabled(false); 
+            jTextFieldLivro.setEnabled(false);  
+            jFormattedTextFieldDataRetirada.setEnabled(false);  
+            jFormattedTextFieldDataDevolucao.setEnabled(false);
+            
+            jTextFieldCodigo.setText("");
+            jTextFieldNomeAmigo.setText(""); 
+            jTextFieldLivro.setText("");  
+            jFormattedTextFieldDataRetirada.setText("");   
+            jFormattedTextFieldDataDevolucao.setText("");
+       }
        
+       public void finalizarSalvar(){
+           //Método ativa os menus
+                jMenuNovo.setEnabled(true);
+                jMenuSalvar.setEnabled(false);
+                jMenuEditar.setEnabled(true);
+                jMenuExluir.setEnabled(true);
+                jMenuCancelar.setEnabled(false);
+                jButtonBuscar.setEnabled(false);
+                jButtonPesquisarAmigo.setEnabled(false);
+                jButtonPesquisarLivro.setEnabled(false);
+                
+                jTextFieldCodigo.setEnabled(false);
+                jTextFieldNomeAmigo.setEnabled(false);
+                jFormattedTextFieldDataRetirada.setEnabled(false);
+                jFormattedTextFieldDataDevolucao.setEnabled(false); 
+                
+                buscarUltimaInsercao();
+       }
     
     
     
